@@ -1,196 +1,185 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>Playlist de YouTube</title>
-  <style>
-    body {
-      margin: 0;
-      background-color: #000;
-      color: white;
-      font-family: Arial, sans-serif;
-    }
-    #player {
-      width: 100%;
-      max-width: 900px;
-      height: 500px;
-      margin: auto;
-      display: block;
-    }
-    .video-list {
-      max-width: 900px;
-      margin: 20px auto;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      justify-content: center;
-    }
-    .video-item {
-      cursor: pointer;
-      width: 160px;
-      text-align: center;
-    }
-    .video-item img {
-      width: 100%;
-      border-radius: 10px;
-    }
-    .video-item:hover {
-      transform: scale(1.05);
-      transition: transform 0.2s;
-    }
-    .video-title {
-      font-size: 14px;
-      margin-top: 5px;
-    }
-  </style>
+  <meta charset="UTF-8">
+  <title>Playlist de YouTube</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background-color: #000;
+      color: white;
+      font-family: Arial, sans-serif;
+      height: 100%;
+    }
+
+    #player {
+      width: 100%;
+      max-width: 900px;
+      height: 500px;
+      margin: auto;
+      display: block;
+      background-color: #000; /* Asegura fondo negro en el contenedor del reproductor */
+    }
+
+    .video-list {
+      max-width: 900px;
+      margin: 20px auto;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+    }
+
+    .video-item {
+      cursor: pointer;
+      width: 160px;
+      text-align: center;
+    }
+
+    .video-item img {
+      width: 100%;
+      border-radius: 10px;
+    }
+
+    .video-item:hover {
+      transform: scale(1.05);
+      transition: transform 0.2s;
+    }
+
+    .video-title {
+      font-size: 14px;
+      margin-top: 5px;
+    }
+  </style>
 </head>
 <body>
 
-  <div id="player"></div>
-  <div class="video-list" id="videoList"></div>
+  <div id="player"></div>
+  <div class="video-list" id="videoList"></div>
 
-  <script>
-    const apiKey = "AIzaSyBH7BKj2yIhisHaamfWOEe7oR-g84UtBSY";
-    const playlistId1 = "PLcsme1qYxvpEPg8sz7IABb_ATuze-pDd3";  // Primera playlist
-    const playlistId2 = "PLcsme1qYxvpETuoaFFrDquIQzyGca7uXq";  // Segunda playlist
-    let player;
-    let saveInterval;
+  <script>
+    const apiKey = "AIzaSyBH7BKj2yIhisHaamfWOEe7oR-g84UtBSY";
+    const playlistId1 = "PLcsme1qYxvpEPg8sz7IABb_ATuze-pDd3";
+    const playlistId2 = "PLcsme1qYxvpETuoaFFrDquIQzyGca7uXq";
+    let player;
+    let saveInterval;
 
-    // Cargar el reproductor
-    function loadPlayer(videoId, startSeconds = 0) {
-      if (!player) {
-        player = new YT.Player('player', {
-          height: '500',
-          width: '100%',
-          videoId: videoId,
-          playerVars: { autoplay: 1, rel: 0 },
-          events: {
-            'onReady': (event) => {
-              if (startSeconds > 0) {
-                event.target.seekTo(startSeconds);
-              }
-              event.target.playVideo();
-              startSavingTime();
-            },
-            'onStateChange': onPlayerStateChange,
-            'onError': (event) => {
-              // Si el video no está disponible para embebido, redirige a YouTube
-              const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
-              alert("El video no está disponible para ver en este reproductor. Redirigiendo a YouTube.");
-              window.location.href = videoUrl;
-            }
-          }
-        });
-      } else {
-        player.loadVideoById({ videoId: videoId, startSeconds: startSeconds });
-        startSavingTime();
-      }
+    function loadPlayer(videoId, startSeconds = 0) {
+      if (!player) {
+        player = new YT.Player('player', {
+          height: '500',
+          width: '100%',
+          videoId: videoId,
+          playerVars: { autoplay: 1, rel: 0 },
+          events: {
+            'onReady': (event) => {
+              if (startSeconds > 0) {
+                event.target.seekTo(startSeconds);
+              }
+              event.target.playVideo();
+              startSavingTime();
+            },
+            'onStateChange': onPlayerStateChange
+          }
+        });
+      } else {
+        player.loadVideoById({ videoId: videoId, startSeconds: startSeconds });
+        startSavingTime();
+      }
 
-      // Guardar el último video
-      localStorage.setItem("lastWatchedVideo", videoId);
-    }
+      localStorage.setItem("lastWatchedVideo", videoId);
+    }
 
-    // Guardar el tiempo actual cada 5 segundos
-    function startSavingTime() {
-      clearInterval(saveInterval);
-      saveInterval = setInterval(() => {
-        if (player && player.getPlayerState() === YT.PlayerState.PLAYING) {
-          const currentTime = Math.floor(player.getCurrentTime());
-          const currentVideoId = player.getVideoData().video_id;
-          localStorage.setItem("lastWatchedTime", currentTime);
-          localStorage.setItem("lastWatchedVideo", currentVideoId);
-        }
-      }, 5000);
-    }
+    function startSavingTime() {
+      clearInterval(saveInterval);
+      saveInterval = setInterval(() => {
+        if (player && player.getPlayerState() === YT.PlayerState.PLAYING) {
+          const currentTime = Math.floor(player.getCurrentTime());
+          const currentVideoId = player.getVideoData().video_id;
+          localStorage.setItem("lastWatchedTime", currentTime);
+          localStorage.setItem("lastWatchedVideo", currentVideoId);
+        }
+      }, 5000);
+    }
 
-    function onPlayerStateChange(event) {
-      if (event.data === YT.PlayerState.ENDED) {
-        clearInterval(saveInterval);
-      }
-    }
+    function onPlayerStateChange(event) {
+      if (event.data === YT.PlayerState.ENDED) {
+        clearInterval(saveInterval);
+      }
+    }
 
-    // Cargar las playlists desde la API
-    async function fetchPlaylist() {
-      let allVideos = [];
-      
-      // Obtener videos de la primera playlist
-      allVideos = allVideos.concat(await getVideosFromPlaylist(playlistId1));
+    async function fetchPlaylist() {
+      let allVideos = [];
+      allVideos = allVideos.concat(await getVideosFromPlaylist(playlistId1));
+      allVideos = allVideos.concat(await getVideosFromPlaylist(playlistId2));
 
-      // Obtener videos de la segunda playlist
-      allVideos = allVideos.concat(await getVideosFromPlaylist(playlistId2));
+      allVideos.sort((a, b) => {
+        const numA = extractChapterNumber(a.snippet.title);
+        const numB = extractChapterNumber(b.snippet.title);
+        return numA - numB;
+      });
 
-      // Ordenar los videos numéricamente (extraer números de los títulos de los videos)
-      allVideos.sort((a, b) => {
-        const numA = extractChapterNumber(a.snippet.title);
-        const numB = extractChapterNumber(b.snippet.title);
-        return numA - numB; // Ordenar numéricamente
-      });
+      renderPlaylist(allVideos);
+    }
 
-      renderPlaylist(allVideos);
-    }
+    async function getVideosFromPlaylist(playlistId) {
+      let nextPageToken = "";
+      let videos = [];
 
-    // Obtener los videos de una playlist
-    async function getVideosFromPlaylist(playlistId) {
-      let nextPageToken = "";
-      let videos = [];
-      
-      do {
-        const res = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&maxResults=50&playlistId=${playlistId}&key=${apiKey}&pageToken=${nextPageToken}`);
-        const data = await res.json();
-        videos = videos.concat(data.items);
-        nextPageToken = data.nextPageToken || "";
-      } while (nextPageToken);
-      
-      return videos;
-    }
+      do {
+        const res = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&maxResults=50&playlistId=${playlistId}&key=${apiKey}&pageToken=${nextPageToken}`);
+        const data = await res.json();
+        videos = videos.concat(data.items);
+        nextPageToken = data.nextPageToken || "";
+      } while (nextPageToken);
 
-    // Extraer el número de capítulo del título (esto asume que el título contiene un número)
-    function extractChapterNumber(title) {
-      const match = title.match(/(\d+)/); // Buscar un número en el título
-      return match ? parseInt(match[0]) : 0; // Si encuentra un número, lo devuelve, sino devuelve 0
-    }
+      return videos;
+    }
 
-    // Mostrar los videos
-    function renderPlaylist(videos) {
-      const container = document.getElementById("videoList");
-      container.innerHTML = "";
+    function extractChapterNumber(title) {
+      const match = title.match(/(\d+)/);
+      return match ? parseInt(match[0]) : 0;
+    }
 
-      videos.forEach(video => {
-        const videoId = video.snippet.resourceId.videoId;
-        const title = video.snippet.title;
-        const thumbnail = video.snippet.thumbnails.medium.url;
+    function renderPlaylist(videos) {
+      const container = document.getElementById("videoList");
+      container.innerHTML = "";
 
-        const div = document.createElement("div");
-        div.className = "video-item";
-        div.innerHTML = `
-          <img src="${thumbnail}" alt="${title}">
-          <div class="video-title">${title}</div>
-        `;
-        div.onclick = () => {
-          localStorage.setItem("lastWatchedVideo", videoId);
-          localStorage.setItem("lastWatchedTime", "0");
-          loadPlayer(videoId);
-        };
-        container.appendChild(div);
-      });
+      videos.forEach(video => {
+        const videoId = video.snippet.resourceId.videoId;
+        const title = video.snippet.title;
+        const thumbnail = video.snippet.thumbnails.medium.url;
 
-      // Cargar el último video y tiempo
-      const lastVideo = localStorage.getItem("lastWatchedVideo");
-      const lastTime = parseInt(localStorage.getItem("lastWatchedTime") || "0");
-      const firstVideoId = videos[0].snippet.resourceId.videoId;
+        const div = document.createElement("div");
+        div.className = "video-item";
+        div.innerHTML = `
+          <img src="${thumbnail}" alt="${title}">
+          <div class="video-title">${title}</div>
+        `;
+        div.onclick = () => {
+          localStorage.setItem("lastWatchedVideo", videoId);
+          localStorage.setItem("lastWatchedTime", "0");
+          loadPlayer(videoId);
+        };
+        container.appendChild(div);
+      });
 
-      loadPlayer(lastVideo || firstVideoId, lastTime);
-    }
+      const lastVideo = localStorage.getItem("lastWatchedVideo");
+      const lastTime = parseInt(localStorage.getItem("lastWatchedTime") || "0");
+      const firstVideoId = videos[0].snippet.resourceId.videoId;
 
-    // Cargar el API de YouTube
-    const tag = document.createElement('script');
-    tag.src = "https://www.youtube.com/iframe_api";
-    document.body.appendChild(tag);
+      loadPlayer(lastVideo || firstVideoId, lastTime);
+    }
 
-    window.onYouTubeIframeAPIReady = function () {
-      fetchPlaylist();
-    };
-  </script>
+    const tag = document.createElement('script');
+    tag.src = "https://www.youtube.com/iframe_api";
+    document.body.appendChild(tag);
+
+    window.onYouTubeIframeAPIReady = function () {
+      fetchPlaylist();
+    };
+  </script>
 
 </body>
 </html>
